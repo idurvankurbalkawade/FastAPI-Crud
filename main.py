@@ -1,9 +1,8 @@
 from fastapi import FastAPI, HTTPException,status
 from pydantic import BaseModel
-from typing import Optional
 from database import Sessionlocal
 import uvicorn
-import models
+from models import Item
 
 
 app=FastAPI()
@@ -14,27 +13,34 @@ db = Sessionlocal()
 class ItemCreate(BaseModel):
     title:str
     description:str
+    price:int
 
     class config:
         orm_mode=True
 
 
-@app.get('/items')
+@app.get('/items',status_code=status.HTTP_200_OK)
 def get_all_items():
-    items = db.query(models.Item).all()
+    items = db.query(Item).all()
     return items
 
-@app.get('/item/{item_id}')
+@app.get('/item/{item_id}',status_code=status.HTTP_200_OK)
 def get_item(item_id:int):
-    item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    item = db.query(Item).filter(Item.Item.id == item_id).first()
     return item
 
-@app.post('/item')
+@app.post('/item',status_code=status.HTTP_201_CREATED)
 def create_item(item:ItemCreate):
-    new_item = models.Item(
+    new_item = Item(
         title=item.title,
-        description=item.description
+        description=item.description,
+        price = item.price
     )
+
+    db_item = db.query(Item).filter(Item.title == new_item.title).first()
+
+    if db_item is not None:
+        raise HTTPException(status_code=400,detail="Item already exists")
 
     db.add(new_item)
     db.commit()
@@ -42,9 +48,10 @@ def create_item(item:ItemCreate):
 
 @app.put('/update/{item_id}')
 def update_item(item_id:int,item:ItemCreate):
-    update_item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    update_item = db.query(Item).filter(Item.Item.id == item_id).first()
     update_item.title = item.title
     update_item.description = item.description
+    update_item.price = item.price
 
     db.commit()
 
@@ -52,7 +59,7 @@ def update_item(item_id:int,item:ItemCreate):
 
 @app.delete('/delete/{item_id}')
 def delete_item(item_id:int):
-    delete_item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    delete_item = db.query(Item).filter(Item.Item.id == item_id).first()
 
     if delete_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Item not found")
