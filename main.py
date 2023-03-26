@@ -26,7 +26,7 @@ def get_all_items():
 
 @app.get('/item/{item_id}',status_code=status.HTTP_200_OK)
 def get_item(item_id:int):
-    item = db.query(Item).filter(Item.Item.id == item_id).first()
+    item = db.query(Item).filter(Item.id == item_id).first()
     return item
 
 @app.post('/item',status_code=status.HTTP_201_CREATED)
@@ -48,18 +48,19 @@ def create_item(item:ItemCreate):
 
 @app.put('/update/{item_id}')
 def update_item(item_id:int,item:ItemCreate):
-    update_item = db.query(Item).filter(Item.Item.id == item_id).first()
+    update_item = db.query(Item).filter(Item.id == item_id).first()
     update_item.title = item.title
     update_item.description = item.description
     update_item.price = item.price
 
     db.commit()
+    db.refresh(update_item)
 
     return "Item updated successfully"
 
 @app.delete('/delete/{item_id}')
 def delete_item(item_id:int):
-    delete_item = db.query(Item).filter(Item.Item.id == item_id).first()
+    delete_item = db.query(Item).filter(Item.id == item_id).first()
 
     if delete_item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Item not found")
